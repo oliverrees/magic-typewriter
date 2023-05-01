@@ -1,0 +1,1 @@
+export { MagicTypewriter } from './MagicTypewriter';
