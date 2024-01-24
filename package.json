@@ -1,6 +1,6 @@
 {
   "name": "magic-typewriter",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "A react typewriter effect with beautiful animations and emoji support",
   "main": "dist/index.js",
   "scripts": {
