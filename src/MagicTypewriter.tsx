@@ -4,10 +4,10 @@ import GraphemeSplitter from "grapheme-splitter";
 import React from "react";
 
 interface ContainerProps {
-  message: String;
+  message: string;
   onComplete?: Function;
-  splitLines?: Boolean;
-  isLoading?: Boolean;
+  splitLines?: boolean;
+  isLoading?: boolean;
   splitString?: RegExp;
   lineDelay?: number | undefined;
   charDelay?: number | undefined;
@@ -94,9 +94,7 @@ export const MagicTypewriter: React.FC<ContainerProps> = ({
     const totalLines = splitText.length;
     totalTime.current = totalChars * charDelayUse + totalLines * lineDelayUse;
 
-    const timeouts: {
-      [key: string]: any;
-    } = {};
+    const timeouts: NodeJS.Timeout[] = [];
     // Reset all lines
     setActiveLine(-1);
     setActiveChar(-1);
@@ -117,7 +115,7 @@ export const MagicTypewriter: React.FC<ContainerProps> = ({
         })
         .reduce((partialSum: number, a: number) => partialSum + a, 0);
       // Start the line timeout
-      return (timeouts["lines"] = setTimeout(() => {
+      const lineTimeout = setTimeout(() => {
         // Get a list of the words in this line
         const thisLine = line;
         // Set the active line
@@ -137,42 +135,56 @@ export const MagicTypewriter: React.FC<ContainerProps> = ({
             })
             .reduce((partialSum: number, a: number) => partialSum + a, 0);
 
-          return (timeouts["words"] = setTimeout(() => {
+          const wordTimeout = setTimeout(() => {
             setActiveWord(wordIndex);
             setActiveChar(0);
             // Loop through all the chars in this word
             currentWord.map((currentChar, charIndex) => {
-              return (timeouts["chars"] = setTimeout(() => {
+              const charTimeout = setTimeout(() => {
                 setActiveChar(charIndex);
                 // Set cursor position
                 setCursorPosition(getCursorPosition());
-              }, charIndex * charDelayUse));
+              }, charIndex * charDelayUse);
+              timeouts.push(charTimeout);
+              return charTimeout;
             });
-          }, prevWordChars * charDelayUse));
+          }, prevWordChars * charDelayUse);
+          timeouts.push(wordTimeout);
+          return wordTimeout;
         });
-      }, prevLineChars * charDelayUse + lineIndex * lineDelayUse));
+      }, prevLineChars * charDelayUse + lineIndex * lineDelayUse);
+      timeouts.push(lineTimeout);
+      return lineTimeout;
     });
 
     return () => {
-      Object.keys(timeouts).forEach((key) => {
-        clearTimeout(timeouts[key]);
+      timeouts.forEach((timeout) => {
+        clearTimeout(timeout);
       });
     };
   }, [message, toSplit, charDelay, lineDelay]);
 
-  if (totalTime.current > 0) {
-    setTimeout(() => {
-      if (onComplete) {
+  useEffect(() => {
+    if (totalTime.current > 0 && onComplete) {
+      const completeTimeout = setTimeout(() => {
         onComplete();
-      }
-    }, totalTime.current);
-  }
+      }, totalTime.current);
+      
+      return () => {
+        clearTimeout(completeTimeout);
+      };
+    }
+  }, [totalTime.current, onComplete]);
 
   useEffect(() => {
-    setTimeout(
+    const positionTimeout = setTimeout(
       () => getCursorPosition() !== 0 && setCursorPosition(getCursorPosition()),
       1
     );
+    
+    return () => {
+      clearTimeout(positionTimeout);
+    };
   }, []);
 
   return (

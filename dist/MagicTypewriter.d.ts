@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 interface ContainerProps {
-    message: String;
+    message: string;
     onComplete?: Function;
-    splitLines?: Boolean;
-    isLoading?: Boolean;
+    splitLines?: boolean;
+    isLoading?: boolean;
     splitString?: RegExp;
     lineDelay?: number | undefined;
     charDelay?: number | undefined;
